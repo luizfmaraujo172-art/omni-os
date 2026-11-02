@@ -1,0 +1,30 @@
+name: Build Omni OS
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Instalar ferramentas de build
+      run: |
+        sudo apt update
+        sudo apt install -y live-build debootstrap
+
+    - name: Configurar o Omni OS
+      run: |
+        mkdir projeto && cd projeto
+        lb config --architectures amd64 --distribution bookworm --binary-images iso-hybrid --archive-areas "main contrib non-free non-free-firmware" --mirror-bootstrap "http://debian.org" --mirror-chroot "http://debian.org" --mirror-binary "http://debian.org"
+        
+        # Criar pacotes
+        mkdir -p config/package-lists
+        echo "xfce4 xfce4-goodies lightdm lightdm-gtk-greeter arc-theme papirus-icon-theme firefox-esr mousepad vlc neofetch calamares calamares-settings-debian firmware-linux firmware-linux-nonfree" > config/package-lists/desktop.list.chroot
+        
+        # Rodar o build na nuvem
+        sudo lb build
+
+    - name: Enviar a ISO pronta para download
+      uses: actions/upload-artifact@v4
+      with:
+        name: Omni-OS-ISO
+        path: projeto/*.iso
